@@ -1,13 +1,16 @@
 import numpy as np
 import tensorflow as tf
 
+PRINT_INFO_ON = False
+
 
 def print_info(input_tensor, output_tensor, name):
-    print("==================================================")
-    print("{}:".format(name))
-    print("input x_tensor = {}".format(input_tensor))
-    print("result = {}".format(output_tensor))
-    print("==================================================")
+    if PRINT_INFO_ON:
+        print("==================================================")
+        print("{}:".format(name))
+        print("input x_tensor = {}".format(input_tensor))
+        print("result = {}".format(output_tensor))
+        print("==================================================")
     return
 
 
@@ -27,7 +30,7 @@ def input_label(n_classes, name):
     return result
 
 
-def conv2d(x_tensor, conv_num_outputs, conv_ksize, conv_strides, name):
+def conv2d(x_tensor, conv_num_outputs, conv_ksize, conv_strides, name, option):
     """
     :param conv_num_outputs: Number of outputs for the convolutional layer
     :param conv_ksize: kernal size 2-D Tuple for the convolutional layer
@@ -41,7 +44,18 @@ def conv2d(x_tensor, conv_num_outputs, conv_ksize, conv_strides, name):
         conv_layer = tf.nn.conv2d(x_tensor, weight,
                                   strides=[1, conv_strides[0], conv_strides[1], 1], padding="SAME")
         conv_layer = tf.nn.bias_add(conv_layer, bias)
-        result = tf.nn.relu(conv_layer)
+        if option == 0:
+            result = tf.identity(conv_layer)
+        elif option == 1:
+            result = tf.nn.relu(conv_layer)
+        elif option == 2:
+            result = tf.nn.relu6(conv_layer)
+        elif option == 3:
+            result = tf.sin(conv_layer)
+        elif option == 4:
+            result = tf.cos(conv_layer)
+        else:
+            raise SystemExit("option out of range!")
         tf.summary.histogram(name, result)
     print_info(x_tensor, result, name)
     return result
@@ -110,13 +124,13 @@ def output(x_tensor, num_outputs, name):
     return result
 
 
-def conv_net(x, n_classes, name):
+def conv_net(x, n_classes, name, option):
 
     with tf.name_scope(name):
-        conv_layer = conv2d(x, 128, (3, 3), (2, 2), "conv2d_layer_0")
+        conv_layer = conv2d(x, 128, (3, 3), (2, 2), "conv2d_layer_0", option)
         conv_layer = maxpool(conv_layer, (3, 3), (2, 2), "maxpool_layer_0")
 
-        conv_layer = conv2d(conv_layer, 256, (3, 3), (2, 2), "conv2d_layer_1")
+        conv_layer = conv2d(conv_layer, 256, (3, 3), (2, 2), "conv2d_layer_1", option)
         conv_layer = maxpool(conv_layer, (3, 3), (2, 2), "maxpool_layer_1")
 
         flatten_layer = flatten(conv_layer, "flatten_layer_0")
@@ -129,9 +143,7 @@ def conv_net(x, n_classes, name):
     return output_layer
 
 
-def build():
-    # Remove previous weights, bias, inputs, etc..
-    tf.reset_default_graph()
+def build(lr, option):
 
     image_shape = (32, 32, 3)
     n_classes = 10
@@ -143,7 +155,7 @@ def build():
 
     with tf.name_scope("logits_scope"):
         # Model
-        logits = conv_net(x, n_classes, "conv_net")
+        logits = conv_net(x, n_classes, "conv_net", option)
 
         # Name logits Tensor, so that is can be loaded from disk after training
         logits = tf.identity(logits, name='logits')
@@ -154,13 +166,13 @@ def build():
         tf.summary.scalar("cost", cost)
 
     with tf.name_scope("optimizer"):
-        optimizer = tf.train.AdamOptimizer().minimize(cost)
+        optimizer = tf.train.AdamOptimizer(lr).minimize(cost)
 
     with tf.name_scope("accuracy_scope"):
         # Accuracy
         correct_pred = tf.equal(tf.argmax(logits, 1), tf.argmax(y, 1))
         accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32), name='accuracy')
-        tf.summary.scalar("cost", accuracy)
+        tf.summary.scalar("accuracy", accuracy)
 
     return x, y, logits, cost, optimizer, correct_pred, accuracy
 
