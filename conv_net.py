@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow as tf
+from tensorflow.python.ops import gen_nn_ops
 
 PRINT_INFO_ON = False
 
@@ -30,6 +31,41 @@ def input_label(n_classes, name):
     return result
 
 
+def cust(x_tensor, name, func_str):
+    # implement w2*sin(w0*x + b0) + w3*cos(w1*x + b1)
+    dim = x_tensor.get_shape().as_list()
+    print(dim)
+
+    with tf.name_scope(name):
+        weight_0 = tf.Variable(tf.truncated_normal(dim[1:], stddev=0.05))
+        weight_1 = tf.Variable(tf.truncated_normal(dim[1:], stddev=0.05))
+        weight_2 = tf.Variable(tf.truncated_normal(dim[1:], stddev=0.05))
+        weight_3 = tf.Variable(tf.truncated_normal(dim[1:], stddev=0.05))
+        bias_0 = tf.Variable(tf.zeros(dim[1:]))
+        bias_1 = tf.Variable(tf.zeros(dim[1:]))
+
+        if func_str == "identity":
+            p1_output = tf.identity(tf.add(tf.multiply(weight_0, x_tensor), bias_0))
+            p2_output = tf.identity(tf.add(tf.multiply(weight_1, x_tensor), bias_1))
+        elif func_str == "sin_cos":
+            p1_output = tf.sin(tf.add(tf.multiply(weight_0, x_tensor), bias_0))
+            p2_output = tf.cos(tf.add(tf.multiply(weight_1, x_tensor), bias_1))
+        elif func_str == "sin_x_tan":
+            p1_output = tf.sin(tf.tan(tf.add(tf.multiply(weight_0, x_tensor), bias_0)))
+            p2_output = tf.sin(tf.tan(tf.add(tf.multiply(weight_1, x_tensor), bias_1)))
+        else:
+            raise SystemExit("func parameter in cust layer is invalid!")
+
+        w_sin = tf.multiply(weight_2, p1_output)
+        w_cos = tf.multiply(weight_3, p2_output)
+
+        result = tf.add(w_sin, w_cos)
+        tf.summary.histogram(name, result)
+
+    print_info(x_tensor, result, name)
+    return result
+
+
 def conv2d(x_tensor, conv_num_outputs, conv_ksize, conv_strides, name, option):
     """
     :param conv_num_outputs: Number of outputs for the convolutional layer
@@ -45,14 +81,16 @@ def conv2d(x_tensor, conv_num_outputs, conv_ksize, conv_strides, name, option):
                                   strides=[1, conv_strides[0], conv_strides[1], 1], padding="SAME")
         conv_layer = tf.nn.bias_add(conv_layer, bias)
         if option == 0:
-            result = tf.identity(conv_layer)
+            result = cust(conv_layer, "cust")
         elif option == 1:
-            result = tf.nn.relu(conv_layer)
+            result = tf.identity(conv_layer)
         elif option == 2:
-            result = tf.nn.relu6(conv_layer)
-        elif option == 3:
             result = tf.sin(conv_layer)
+        elif option == 3:
+            result = tf.nn.relu(conv_layer)
         elif option == 4:
+            result = tf.nn.relu6(conv_layer)
+        elif option == 5:
             result = tf.cos(conv_layer)
         else:
             raise SystemExit("option out of range!")
@@ -98,7 +136,8 @@ def fully_connect(x_tensor, num_outputs, name):
     with tf.name_scope(name):
         result = tf.layers.dense(inputs=x_tensor,
                                  units=num_outputs,
-                                 activation=tf.nn.relu,
+                                 activation=None,
+                                 # activation=tf.nn.relu,
                                  # activation=tf.nn.elu,
                                  kernel_initializer=tf.truncated_normal_initializer(),
                                  name=name)
@@ -143,7 +182,27 @@ def conv_net(x, n_classes, name, option):
     return output_layer
 
 
-def build(lr, option):
+def conv_cust_net(x, n_classes, name, option, func_str):
+
+    with tf.name_scope(name):
+        conv_layer = conv2d(x, 128, (3, 3), (2, 2), "conv2d_layer_0", option)
+        conv_layer = maxpool(conv_layer, (3, 3), (2, 2), "maxpool_layer_0")
+
+        conv_layer = conv2d(conv_layer, 256, (3, 3), (2, 2), "conv2d_layer_1", option)
+        conv_layer = maxpool(conv_layer, (3, 3), (2, 2), "maxpool_layer_1")
+
+        flatten_layer = flatten(conv_layer, "flatten_layer_0")
+
+        fully_layer = fully_connect(flatten_layer, 256, "fully_connect_layer_0")
+        fully_layer = cust(fully_layer, "cust_fully_layer_0", func_str=func_str)
+        # fully_layer = fully_connect(fully_layer, 128, "fully_connect_layer_1")
+
+        output_layer = output(fully_layer, n_classes, "output_layer")
+
+    return output_layer
+
+
+def build(lr, act_option, net_option, func_str):
 
     image_shape = (32, 32, 3)
     n_classes = 10
@@ -153,10 +212,15 @@ def build(lr, option):
         x = input_image(image_shape, "input_image")
         y = input_label(n_classes, "input_label")
 
-    with tf.name_scope("logits_scope"):
-        # Model
-        logits = conv_net(x, n_classes, "conv_net", option)
+    # Model
+    if net_option == 0:
+        logits = conv_net(x, n_classes, "conv_net", act_option)
+    elif net_option == 1:
+        logits = conv_cust_net(x, n_classes, "conv_cust_net", act_option, func_str)
+    else:
+        raise SystemExit("net_option out of range!")
 
+    with tf.name_scope("logits"):
         # Name logits Tensor, so that is can be loaded from disk after training
         logits = tf.identity(logits, name='logits')
 
