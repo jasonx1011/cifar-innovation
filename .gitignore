@@ -105,3 +105,10 @@ ENV/
 
 # migration detail
 migrations/
+
+# backup dir
+backup/
+
+# pre_data
+pre_data/
+
