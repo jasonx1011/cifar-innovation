@@ -31,6 +31,6 @@ def _clean_files(rm_path, bak_path):
 
 def backup_files(dir_list):
     for directory in dir_list:
-        _clean_files(directory, os.path.join("backup", directory))
+        _clean_files(directory, os.path.join("backup/", directory))
     return None
 
