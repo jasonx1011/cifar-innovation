@@ -57,9 +57,11 @@ def next_batch(x, y, batch_size, re_shuffle):
         idx += batch_size
 
 
-def make_hparam_string(lr, epochs, batch_size, option):
+def make_hparam_string(lr, epochs, batch_size, act_option, net_option, func_str):
     log_timestr = datetime.now().strftime("%Y%m%d_%H%M%S")
-    hparam_str = "lr_{:.0E},{},{},op_{},{}".format(lr, epochs, batch_size, option, log_timestr)
+    hparam_str = "lr_{:.0E},{},{},act_op_{},net_op_{},{},{}".format(lr, epochs, batch_size,
+                                                                 act_option, net_option,
+                                                                 func_str, log_timestr)
     # hparam_str = "lr_{:.0E},{},{},h_layers".format(lr, epochs, batch_size)
     # idx = 0
     # while idx < len(hidden_layers):
@@ -68,7 +70,7 @@ def make_hparam_string(lr, epochs, batch_size, option):
     return hparam_str
 
 
-def run_graph(train_set, valid_set, lr, epochs, batch_size, turn_on_tb, option):
+def run_graph(train_set, valid_set, lr, epochs, batch_size, turn_on_tb, act_option, net_option, func_str):
     # unpack training set and validation set
 
     train_features, train_labels = train_set
@@ -78,9 +80,9 @@ def run_graph(train_set, valid_set, lr, epochs, batch_size, turn_on_tb, option):
     tf.reset_default_graph()
 
     # build up nets
-    x, y, logits, cost, optimizer, correct_pred, accuracy = conv_net.build(lr, option)
+    x, y, logits, cost, optimizer, correct_pred, accuracy = conv_net.build(lr, act_option, net_option, func_str)
 
-    hparam_str = make_hparam_string(lr, epochs, batch_size, option)
+    hparam_str = make_hparam_string(lr, epochs, batch_size, act_option, net_option, func_str)
     print("=====================")
     print("{}".format(hparam_str))
     print("=====================")
@@ -148,19 +150,24 @@ def main():
     # AdamOptimizer default initial lr = 0.001 = 1e-3
     lr = 1E-3
     # lr = 3E-3
+    # epochs = 100
     epochs = 2
-    # epochs = 5
     batch_size = 256
     # batch_size = 32
     # hidden_layers = [16, 32]
 
-    for act_option in range(5):
-        start_time = timeit.default_timer()
-        run_graph(train_set, valid_set, lr, epochs, batch_size, turn_on_tb, act_option)
-        end_time = timeit.default_timer()
-        print("=====================")
-        print("Run time = {:.2f} mins".format((end_time - start_time) / 60))
-        print("=====================")
+    # for act_option in [1, 2, 3, 4]:
+    for act_option in [1]:
+        for net_option in [0, 1]:
+            if net_option == 1:
+                for func_str in ["sin_x_tan", "sin_cos", "identity"]:
+                    start_time = timeit.default_timer()
+                    run_graph(train_set, valid_set, lr, epochs, batch_size,
+                              turn_on_tb, act_option, net_option, func_str)
+                    end_time = timeit.default_timer()
+                    print("=====================")
+                    print("Run time = {:.2f} mins".format((end_time - start_time) / 60))
+                    print("=====================")
 
 
 if __name__ == "__main__":
