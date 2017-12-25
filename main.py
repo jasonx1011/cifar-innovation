@@ -25,10 +25,10 @@ LABEL_NAMES = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', '
 TF_LOGDIR = "./tf_logs/"
 
 # tensorboard log dir
-SAVE_DIR = "./save/"
+SAVE_DIR = "./save_points/"
 
 # tensorboard log dir
-RESTORE_RUN_SAVE_EDIR = "./restore_run_save/"
+RESTORE_RUN_SAVE_EDIR = "./restore_run_save_points/"
 
 def train_network(session, optimizer, x, y, feature_batch, label_batch):
     session.run([optimizer], feed_dict={x: feature_batch,
@@ -77,7 +77,8 @@ def make_hparam_string(lr, epochs, batch_size, act_option, net_option, func_str)
     return hparam_str
 
 
-def run_graph(train_set, valid_set, lr, epochs, batch_size, turn_on_tb, act_option, net_option, func_str, restore_model):
+def run_graph(train_set, valid_set, lr, epochs, batch_size, turn_on_tb,
+              act_option, net_option, func_str, restore_model, loaded_from_str):
     # unpack training set and validation set
 
     train_features, train_labels = train_set
@@ -109,7 +110,7 @@ def run_graph(train_set, valid_set, lr, epochs, batch_size, turn_on_tb, act_opti
         # Initializing the variables
         if restore_model:
             # Restore variables from disk.
-            saver.restore(sess, os.path.join(SAVE_DIR) + "model.ckpt")
+            saver.restore(sess, os.path.join(SAVE_DIR) + loaded_from_str + "/model.ckpt")
             print("Model restored.")
         else:
             sess.run(tf.global_variables_initializer())
@@ -133,9 +134,9 @@ def run_graph(train_set, valid_set, lr, epochs, batch_size, turn_on_tb, act_opti
 
         # Save the variables to disk.
         if restore_model:
-            save_path = saver.save(sess, os.path.join(RESTORE_RUN_SAVE_EDIR) + "model.ckpt")
+            save_path = saver.save(sess, os.path.join(RESTORE_RUN_SAVE_EDIR) + "LOAD_" + loaded_from_str + "_RUN_ON_" + hparam_str[:-16] + "/model.ckpt")
         else:
-            save_path = saver.save(sess, os.path.join(SAVE_DIR) + "model.ckpt")
+            save_path = saver.save(sess, os.path.join(SAVE_DIR) + hparam_str[:-16] + "/model.ckpt")
         print("Model saved in file: {}".format(save_path))
 
     return
@@ -168,37 +169,47 @@ def main():
     print(train_set[1][rand_idx])
     plt.show()
 
+
+    # Hyper parameters default values
+    # AdamOptimizer default initial lr = 0.001 = 1e-3
+    # lr = 4E-3
+    lr = 1E-3
+    # epochs = 100
+    # epochs = 20
+    epochs = 2
+    batch_size = 512
+    # batch_size = 32
+    # hidden_layers = [16, 32]
+
+    # restore_model = False
     restore_model = True
+
+    if restore_model is True:
+        loaded_from_str = "lr_1E-03,10,512,act_op_1,net_op_1,sin_sin"
+
     if not os.path.isdir(SAVE_DIR):
         os.makedirs(SAVE_DIR)
     if not os.path.isdir(RESTORE_RUN_SAVE_EDIR):
         os.makedirs(RESTORE_RUN_SAVE_EDIR)
 
-    # Hyper parameters default values
-    # AdamOptimizer default initial lr = 0.001 = 1e-3
-    # lr = 4E-3
-    lr = 3E-3
-    # epochs = 100
-    # epochs = 20
-    epochs = 5
-    batch_size = 512
-    # batch_size = 32
-    # hidden_layers = [16, 32]
-
+    all_2_func_str = ["iden_iden", "sin_cos", "sin_iden", "sin_tanh", "sin_relu", "relu_relu",
+                    "sin_tan", "sintan_sintan", "sintan_tansin", "sin_sin", "sinsin_sinsin"]
+    all_3_func_str = ["sintan_tansin_iden"]
     # for act_option in [1, 2, 3, 4]:
     for act_option in [1]:
         for net_option in [1]:
             if net_option == 1:
+                # for func_str in all_2_func_str + all_3_func_str:
                 # for func_str in ["sin_x_tan", "sin_cos", "identity"]:
                 # for func_str in ["sin_iden", "sin_relu", "sin_sin", "iden_iden"]:
                 # for func_str in ["iden_iden", "sin_tanh"]:
-                # for func_str in ["iden_iden"]:
+                # for func_str in ["iden_iden", "sin_iden"]:
                 # for func_str in ["sintan_tansin"]:
-                for func_str in ["sin_cos"]:
+                for func_str in ["sin_tanh"]:
                 # for func_str in ["sintan_tansin", "iden_iden", "sin_sin"]:
                     start_time = timeit.default_timer()
                     run_graph(train_set, valid_set, lr, epochs, batch_size,
-                              turn_on_tb, act_option, net_option, func_str, restore_model)
+                              turn_on_tb, act_option, net_option, func_str, restore_model, loaded_from_str)
                     end_time = timeit.default_timer()
                     print("=====================")
                     print("Run time = {:.2f} mins".format((end_time - start_time) / 60))

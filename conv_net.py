@@ -55,9 +55,6 @@ def cust(x_tensor, name, func_str):
         elif func_str == "sin_iden":
             p1_output = tf.sin(tf.add(tf.multiply(weight_0, x_tensor), bias_0))
             p2_output = tf.identity(tf.add(tf.multiply(weight_1, x_tensor), bias_1))
-        elif func_str == "3sin_iden":
-            p1_output = tf.sin(tf.add(tf.multiply(weight_0, x_tensor), bias_0))
-            p2_output = tf.identity(tf.add(tf.multiply(weight_0, x_tensor), bias_0))
         elif func_str == "sin_tanh":
             p1_output = tf.sin(tf.add(tf.multiply(weight_0, x_tensor), bias_0))
             p2_output = tf.tanh(tf.add(tf.multiply(weight_1, x_tensor), bias_1))
@@ -76,25 +73,20 @@ def cust(x_tensor, name, func_str):
         elif func_str == "sintan_tansin":
             p1_output = tf.sin(tf.tan(tf.add(tf.multiply(weight_0, x_tensor), bias_0)))
             p2_output = tf.tan(tf.sin(tf.add(tf.multiply(weight_1, x_tensor), bias_1)))
-        elif func_str == "sintan_tansin_iden":
-            p1_output = tf.sin(tf.tan(tf.add(tf.multiply(weight_0, x_tensor), bias_0)))
-            p2_output = tf.tan(tf.sin(tf.add(tf.multiply(weight_1, x_tensor), bias_1)))
-            p3_output = tf.identity(x_tensor)
         elif func_str == "sin_sin":
             p1_output = tf.sin(tf.add(tf.multiply(weight_0, x_tensor), bias_0))
             p2_output = tf.sin(tf.add(tf.multiply(weight_1, x_tensor), bias_1))
         elif func_str == "sinsin_sinsin":
             p1_output = tf.sin(tf.sin(tf.add(tf.multiply(weight_0, x_tensor), bias_0)))
             p2_output = tf.sin(tf.sin(tf.add(tf.multiply(weight_1, x_tensor), bias_1)))
+        elif func_str == "sintan_tansin_iden":
+            p1_output = tf.sin(tf.tan(tf.add(tf.multiply(weight_0, x_tensor), bias_0)))
+            p2_output = tf.tan(tf.sin(tf.add(tf.multiply(weight_1, x_tensor), bias_1)))
+            p3_output = tf.identity(x_tensor)
         else:
             raise SystemExit("func parameter in cust layer is invalid!")
 
-        if func_str == "3sin_iden":
-            # w_p1 = tf.multiply(tf.multiply(3.0, weight_2), p1_output)
-            w_p1 = tf.multiply(tf.multiply(weight_mult, weight_2), p1_output)
-            w_p2 = tf.multiply(weight_2, p2_output)
-            result = tf.add(w_p1, w_p2)
-        elif func_str == "sintan_tansin_iden":
+        if func_str == "sintan_tansin_iden":
             w_p1 = tf.multiply(weight_2, p1_output)
             w_p2 = tf.multiply(weight_3, p2_output)
             w_p3 = tf.multiply(weight_4, p3_output)
