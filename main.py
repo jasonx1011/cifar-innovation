@@ -25,7 +25,7 @@ LABEL_NAMES = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', '
 TF_LOGDIR = "./tf_logs/"
 
 # tensorboard log dir
-SAVE_DIR = "./save_points/"
+SAVE_POINTS_DIR = "./save_points/"
 
 # tensorboard log dir
 RESTORE_RUN_SAVE_EDIR = "./restore_run_save_points/"
@@ -36,7 +36,8 @@ def train_network(session, optimizer, x, y, feature_batch, label_batch):
     return None
 
 
-def print_stats(session, merged, x, y, feature_batch, label_batch, valid_features, valid_labels, cost, accuracy):
+def print_stats(session, merged, x, y, feature_batch, label_batch, valid_features, valid_labels,
+                cost, accuracy, txt_logfile):
     loss, summary_train = session.run([cost, merged], feed_dict={x: feature_batch,
                                                                  y: label_batch})
 
@@ -44,6 +45,8 @@ def print_stats(session, merged, x, y, feature_batch, label_batch, valid_feature
                                                                           y: valid_labels})
 
     print('batch training loss = {:>5.3f}, valid_acc = {:>1.3f}'.format(loss, valid_acc))
+    with open(txt_logfile, "a") as logfile:
+        logfile.write('batch training loss = {:>5.3f}, valid_acc = {:>1.3f}\n'.format(loss, valid_acc))
 
     return summary_train, summary_valid
 
@@ -79,6 +82,9 @@ def make_hparam_string(lr, epochs, batch_size, act_option, net_option, func_str)
 
 def run_graph(train_set, valid_set, lr, epochs, batch_size, turn_on_tb,
               act_option, net_option, func_str, restore_model, loaded_from_str):
+
+    start_time = timeit.default_timer()
+
     # unpack training set and validation set
 
     train_features, train_labels = train_set
@@ -91,9 +97,18 @@ def run_graph(train_set, valid_set, lr, epochs, batch_size, turn_on_tb,
     x, y, logits, cost, optimizer, correct_pred, accuracy = conv_net.build(lr, act_option, net_option, func_str)
 
     hparam_str = make_hparam_string(lr, epochs, batch_size, act_option, net_option, func_str)
+    txt_logfile = hparam_str + ".txt"
+    with open(txt_logfile, "w") as logfile:
+        print("{} created".format(txt_logfile))
+        logfile.close()
+
     print("=====================")
     print("{}".format(hparam_str))
     print("=====================")
+    with open(txt_logfile, "a") as logfile:
+        logfile.write("=====================\n")
+        logfile.write("{}\n".format(hparam_str))
+        logfile.write("=====================\n")
 
     merged = tf.summary.merge_all()
 
@@ -110,8 +125,10 @@ def run_graph(train_set, valid_set, lr, epochs, batch_size, turn_on_tb,
         # Initializing the variables
         if restore_model:
             # Restore variables from disk.
-            saver.restore(sess, os.path.join(SAVE_DIR) + loaded_from_str + "/model.ckpt")
-            print("Model restored.")
+            saver.restore(sess, os.path.join(SAVE_POINTS_DIR) + loaded_from_str + "/model.ckpt")
+            print("Model restored from: {}".format(loaded_from_str))
+            with open(txt_logfile, "a") as logfile:
+                logfile.write("Model restored from: {}\n".format(loaded_from_str))
         else:
             sess.run(tf.global_variables_initializer())
 
@@ -124,20 +141,35 @@ def run_graph(train_set, valid_set, lr, epochs, batch_size, turn_on_tb,
             batch_i = 1
             for batch_features, batch_labels in next_batch(train_features, train_labels, batch_size, re_shuffle=False):
                 train_network(sess, optimizer, x, y, batch_features, batch_labels)
-            print('Epoch {:>2}, CIFAR-10 Batch {}:  '.format(epoch + 1, batch_i), end='')
+            print('Epoch {:>2}, CIFAR-10 Batch {}: '.format(epoch + 1, batch_i), end='')
+            with open(txt_logfile, "a") as logfile:
+                logfile.write('Epoch {:>2}, CIFAR-10 Batch {}: '.format(epoch + 1, batch_i))
             summary_train, summary_valid = print_stats(sess, merged, x, y, batch_features, batch_labels,
-                                                       valid_features, valid_labels, cost, accuracy)
+                                                       valid_features, valid_labels, cost, accuracy, txt_logfile)
 
             if turn_on_tb:
                 train_writer.add_summary(summary_train, epoch)
                 valid_writer.add_summary(summary_valid, epoch)
 
+        end_time = timeit.default_timer()
+        print("=====================")
+        print("Run time = {:.2f} mins".format((end_time - start_time) / 60))
+        print("=====================")
+        with open(txt_logfile, "a") as logfile:
+            logfile.write("=====================\n")
+            logfile.write("Run time = {:.2f} mins\n".format((end_time - start_time) / 60))
+            logfile.write("=====================\n")
+
         # Save the variables to disk.
         if restore_model:
-            save_path = saver.save(sess, os.path.join(RESTORE_RUN_SAVE_EDIR) + "LOAD_" + loaded_from_str + "_RUN_ON_" + hparam_str[:-16] + "/model.ckpt")
+            save_dir = RESTORE_RUN_SAVE_EDIR + "LOAD_" + loaded_from_str + "_RUN_ON_" + hparam_str[:-16]
+            save_path = saver.save(sess, save_dir + "/model.ckpt")
+            os.rename(txt_logfile, os.path.join(save_dir, "cust_log.txt"))
         else:
-            save_path = saver.save(sess, os.path.join(SAVE_DIR) + hparam_str[:-16] + "/model.ckpt")
-        print("Model saved in file: {}".format(save_path))
+            save_dir = SAVE_POINTS_DIR + hparam_str[:-16]
+            save_path = saver.save(sess, save_dir + "/model.ckpt")
+            os.rename(txt_logfile, os.path.join(save_dir, "cust_log.txt"))
+        print("Model & txt logfile saved in file: {}".format(save_path))
 
     return
 
@@ -169,26 +201,27 @@ def main():
     print(train_set[1][rand_idx])
     plt.show()
 
-
     # Hyper parameters default values
     # AdamOptimizer default initial lr = 0.001 = 1e-3
     # lr = 4E-3
     lr = 1E-3
     # epochs = 100
     # epochs = 20
-    epochs = 2
+    epochs = 20
     batch_size = 512
     # batch_size = 32
     # hidden_layers = [16, 32]
 
-    # restore_model = False
-    restore_model = True
+    restore_model = False
+    # restore_model = True
 
     if restore_model is True:
         loaded_from_str = "lr_1E-03,10,512,act_op_1,net_op_1,sin_sin"
+    else:
+        loaded_from_str = "No loaded from previous model!"
 
-    if not os.path.isdir(SAVE_DIR):
-        os.makedirs(SAVE_DIR)
+    if not os.path.isdir(SAVE_POINTS_DIR):
+        os.makedirs(SAVE_POINTS_DIR)
     if not os.path.isdir(RESTORE_RUN_SAVE_EDIR):
         os.makedirs(RESTORE_RUN_SAVE_EDIR)
 
@@ -199,21 +232,16 @@ def main():
     for act_option in [1]:
         for net_option in [1]:
             if net_option == 1:
-                # for func_str in all_2_func_str + all_3_func_str:
+                for func_str in all_2_func_str + all_3_func_str:
                 # for func_str in ["sin_x_tan", "sin_cos", "identity"]:
                 # for func_str in ["sin_iden", "sin_relu", "sin_sin", "iden_iden"]:
                 # for func_str in ["iden_iden", "sin_tanh"]:
                 # for func_str in ["iden_iden", "sin_iden"]:
                 # for func_str in ["sintan_tansin"]:
-                for func_str in ["sin_tanh"]:
+                # for func_str in ["sin_tanh"]:
                 # for func_str in ["sintan_tansin", "iden_iden", "sin_sin"]:
-                    start_time = timeit.default_timer()
                     run_graph(train_set, valid_set, lr, epochs, batch_size,
                               turn_on_tb, act_option, net_option, func_str, restore_model, loaded_from_str)
-                    end_time = timeit.default_timer()
-                    print("=====================")
-                    print("Run time = {:.2f} mins".format((end_time - start_time) / 60))
-                    print("=====================")
 
 
 if __name__ == "__main__":
