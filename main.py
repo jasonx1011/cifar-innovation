@@ -1,5 +1,6 @@
 from datetime import datetime
 import matplotlib.pyplot as plt
+import os
 import pickle
 from random import randint
 from sklearn.utils import shuffle
@@ -22,6 +23,12 @@ LABEL_NAMES = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', '
 
 # tensorboard log dir
 TF_LOGDIR = "./tf_logs/"
+
+# tensorboard log dir
+SAVE_DIR = "./save/"
+
+# tensorboard log dir
+RESTORE_RUN_SAVE_EDIR = "./restore_run_save/"
 
 def train_network(session, optimizer, x, y, feature_batch, label_batch):
     session.run([optimizer], feed_dict={x: feature_batch,
@@ -70,7 +77,7 @@ def make_hparam_string(lr, epochs, batch_size, act_option, net_option, func_str)
     return hparam_str
 
 
-def run_graph(train_set, valid_set, lr, epochs, batch_size, turn_on_tb, act_option, net_option, func_str):
+def run_graph(train_set, valid_set, lr, epochs, batch_size, turn_on_tb, act_option, net_option, func_str, restore_model):
     # unpack training set and validation set
 
     train_features, train_labels = train_set
@@ -89,6 +96,9 @@ def run_graph(train_set, valid_set, lr, epochs, batch_size, turn_on_tb, act_opti
 
     merged = tf.summary.merge_all()
 
+    # Add ops to save and restore all the variables.
+    saver = tf.train.Saver()
+
     # for i in [x, y, logits, cost, optimizer, correct_pred, accuracy]:
     #     print("===")
     #     print(i)
@@ -97,7 +107,12 @@ def run_graph(train_set, valid_set, lr, epochs, batch_size, turn_on_tb, act_opti
     print('Training...')
     with tf.Session() as sess:
         # Initializing the variables
-        sess.run(tf.global_variables_initializer())
+        if restore_model:
+            # Restore variables from disk.
+            saver.restore(sess, os.path.join(SAVE_DIR) + "model.ckpt")
+            print("Model restored.")
+        else:
+            sess.run(tf.global_variables_initializer())
 
         if turn_on_tb:
             train_writer = tf.summary.FileWriter(TF_LOGDIR + hparam_str + "/train/", sess.graph)
@@ -115,6 +130,13 @@ def run_graph(train_set, valid_set, lr, epochs, batch_size, turn_on_tb, act_opti
             if turn_on_tb:
                 train_writer.add_summary(summary_train, epoch)
                 valid_writer.add_summary(summary_valid, epoch)
+
+        # Save the variables to disk.
+        if restore_model:
+            save_path = saver.save(sess, os.path.join(RESTORE_RUN_SAVE_EDIR) + "model.ckpt")
+        else:
+            save_path = saver.save(sess, os.path.join(SAVE_DIR) + "model.ckpt")
+        print("Model saved in file: {}".format(save_path))
 
     return
 
@@ -146,24 +168,37 @@ def main():
     print(train_set[1][rand_idx])
     plt.show()
 
+    restore_model = True
+    if not os.path.isdir(SAVE_DIR):
+        os.makedirs(SAVE_DIR)
+    if not os.path.isdir(RESTORE_RUN_SAVE_EDIR):
+        os.makedirs(RESTORE_RUN_SAVE_EDIR)
+
     # Hyper parameters default values
     # AdamOptimizer default initial lr = 0.001 = 1e-3
-    lr = 1E-3
-    # lr = 3E-3
+    # lr = 4E-3
+    lr = 3E-3
     # epochs = 100
-    epochs = 2
-    batch_size = 256
+    # epochs = 20
+    epochs = 5
+    batch_size = 512
     # batch_size = 32
     # hidden_layers = [16, 32]
 
     # for act_option in [1, 2, 3, 4]:
     for act_option in [1]:
-        for net_option in [0, 1]:
+        for net_option in [1]:
             if net_option == 1:
-                for func_str in ["sin_x_tan", "sin_cos", "identity"]:
+                # for func_str in ["sin_x_tan", "sin_cos", "identity"]:
+                # for func_str in ["sin_iden", "sin_relu", "sin_sin", "iden_iden"]:
+                # for func_str in ["iden_iden", "sin_tanh"]:
+                # for func_str in ["iden_iden"]:
+                # for func_str in ["sintan_tansin"]:
+                for func_str in ["sin_cos"]:
+                # for func_str in ["sintan_tansin", "iden_iden", "sin_sin"]:
                     start_time = timeit.default_timer()
                     run_graph(train_set, valid_set, lr, epochs, batch_size,
-                              turn_on_tb, act_option, net_option, func_str)
+                              turn_on_tb, act_option, net_option, func_str, restore_model)
                     end_time = timeit.default_timer()
                     print("=====================")
                     print("Run time = {:.2f} mins".format((end_time - start_time) / 60))

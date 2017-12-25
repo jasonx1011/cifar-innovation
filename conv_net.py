@@ -41,25 +41,69 @@ def cust(x_tensor, name, func_str):
         weight_1 = tf.Variable(tf.truncated_normal(dim[1:], stddev=0.05))
         weight_2 = tf.Variable(tf.truncated_normal(dim[1:], stddev=0.05))
         weight_3 = tf.Variable(tf.truncated_normal(dim[1:], stddev=0.05))
+        weight_4 = tf.Variable(tf.truncated_normal(dim[1:], stddev=0.05))
+        weight_mult = tf.Variable(tf.truncated_normal([1], stddev=0.05))
         bias_0 = tf.Variable(tf.zeros(dim[1:]))
         bias_1 = tf.Variable(tf.zeros(dim[1:]))
 
-        if func_str == "identity":
+        if func_str == "iden_iden":
             p1_output = tf.identity(tf.add(tf.multiply(weight_0, x_tensor), bias_0))
             p2_output = tf.identity(tf.add(tf.multiply(weight_1, x_tensor), bias_1))
         elif func_str == "sin_cos":
             p1_output = tf.sin(tf.add(tf.multiply(weight_0, x_tensor), bias_0))
             p2_output = tf.cos(tf.add(tf.multiply(weight_1, x_tensor), bias_1))
-        elif func_str == "sin_x_tan":
+        elif func_str == "sin_iden":
+            p1_output = tf.sin(tf.add(tf.multiply(weight_0, x_tensor), bias_0))
+            p2_output = tf.identity(tf.add(tf.multiply(weight_1, x_tensor), bias_1))
+        elif func_str == "3sin_iden":
+            p1_output = tf.sin(tf.add(tf.multiply(weight_0, x_tensor), bias_0))
+            p2_output = tf.identity(tf.add(tf.multiply(weight_0, x_tensor), bias_0))
+        elif func_str == "sin_tanh":
+            p1_output = tf.sin(tf.add(tf.multiply(weight_0, x_tensor), bias_0))
+            p2_output = tf.tanh(tf.add(tf.multiply(weight_1, x_tensor), bias_1))
+        elif func_str == "sin_relu":
+            p1_output = tf.sin(tf.add(tf.multiply(weight_0, x_tensor), bias_0))
+            p2_output = tf.nn.relu(tf.add(tf.multiply(weight_1, x_tensor), bias_1))
+        elif func_str == "relu_relu":
+            p1_output = tf.nn.relu(tf.add(tf.multiply(weight_0, x_tensor), bias_0))
+            p2_output = tf.nn.relu(tf.add(tf.multiply(weight_1, x_tensor), bias_1))
+        elif func_str == "sin_tan":
+            p1_output = tf.sin(tf.add(tf.multiply(weight_0, x_tensor), bias_0))
+            p2_output = tf.tan(tf.add(tf.multiply(weight_1, x_tensor), bias_1))
+        elif func_str == "sintan_sintan":
             p1_output = tf.sin(tf.tan(tf.add(tf.multiply(weight_0, x_tensor), bias_0)))
             p2_output = tf.sin(tf.tan(tf.add(tf.multiply(weight_1, x_tensor), bias_1)))
+        elif func_str == "sintan_tansin":
+            p1_output = tf.sin(tf.tan(tf.add(tf.multiply(weight_0, x_tensor), bias_0)))
+            p2_output = tf.tan(tf.sin(tf.add(tf.multiply(weight_1, x_tensor), bias_1)))
+        elif func_str == "sintan_tansin_iden":
+            p1_output = tf.sin(tf.tan(tf.add(tf.multiply(weight_0, x_tensor), bias_0)))
+            p2_output = tf.tan(tf.sin(tf.add(tf.multiply(weight_1, x_tensor), bias_1)))
+            p3_output = tf.identity(x_tensor)
+        elif func_str == "sin_sin":
+            p1_output = tf.sin(tf.add(tf.multiply(weight_0, x_tensor), bias_0))
+            p2_output = tf.sin(tf.add(tf.multiply(weight_1, x_tensor), bias_1))
+        elif func_str == "sinsin_sinsin":
+            p1_output = tf.sin(tf.sin(tf.add(tf.multiply(weight_0, x_tensor), bias_0)))
+            p2_output = tf.sin(tf.sin(tf.add(tf.multiply(weight_1, x_tensor), bias_1)))
         else:
             raise SystemExit("func parameter in cust layer is invalid!")
 
-        w_sin = tf.multiply(weight_2, p1_output)
-        w_cos = tf.multiply(weight_3, p2_output)
+        if func_str == "3sin_iden":
+            # w_p1 = tf.multiply(tf.multiply(3.0, weight_2), p1_output)
+            w_p1 = tf.multiply(tf.multiply(weight_mult, weight_2), p1_output)
+            w_p2 = tf.multiply(weight_2, p2_output)
+            result = tf.add(w_p1, w_p2)
+        elif func_str == "sintan_tansin_iden":
+            w_p1 = tf.multiply(weight_2, p1_output)
+            w_p2 = tf.multiply(weight_3, p2_output)
+            w_p3 = tf.multiply(weight_4, p3_output)
+            result = tf.add(tf.add(w_p1, w_p2), w_p3)
+        else:
+            w_p1 = tf.multiply(weight_2, p1_output)
+            w_p2 = tf.multiply(weight_3, p2_output)
+            result = tf.add(w_p1, w_p2)
 
-        result = tf.add(w_sin, w_cos)
         tf.summary.histogram(name, result)
 
     print_info(x_tensor, result, name)
@@ -193,7 +237,8 @@ def conv_cust_net(x, n_classes, name, option, func_str):
 
         flatten_layer = flatten(conv_layer, "flatten_layer_0")
 
-        fully_layer = fully_connect(flatten_layer, 256, "fully_connect_layer_0")
+        # fully_layer = fully_connect(flatten_layer, 256, "fully_connect_layer_0")
+        fully_layer = fully_connect(flatten_layer, 128, "fully_connect_layer_0")
         fully_layer = cust(fully_layer, "cust_fully_layer_0", func_str=func_str)
         # fully_layer = fully_connect(fully_layer, 128, "fully_connect_layer_1")
 
