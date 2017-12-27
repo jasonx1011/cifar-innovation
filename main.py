@@ -22,13 +22,14 @@ PRE_DATA_DIR = "./pre_data/"
 LABEL_NAMES = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
 
 # tensorboard log dir
-TF_LOGDIR = "./tf_logs/"
+TF_LOGDIR = "./tf_logs_" + datetime.now().strftime("%Y%m%d") + "/"
 
 # tensorboard log dir
-SAVE_POINTS_DIR = "./save_points/"
+SAVE_POINTS_DIR = "./save_points_" + datetime.now().strftime("%Y%m%d") + "/"
 
 # tensorboard log dir
-RESTORE_RUN_SAVE_EDIR = "./restore_run_save_points/"
+RESTORE_RUN_SAVE_DIR = "./restore_run_save_points_" + datetime.now().strftime("%Y%m%d") + "/"
+
 
 def train_network(session, optimizer, x, y, feature_batch, label_batch):
     session.run([optimizer], feed_dict={x: feature_batch,
@@ -162,7 +163,7 @@ def run_graph(train_set, valid_set, lr, epochs, batch_size, turn_on_tb,
 
         # Save the variables to disk.
         if restore_model:
-            save_dir = RESTORE_RUN_SAVE_EDIR + "LOAD_" + loaded_from_str + "_RUN_ON_" + hparam_str[:-16]
+            save_dir = RESTORE_RUN_SAVE_DIR + "LOAD_" + loaded_from_str + "_RUN_ON_" + hparam_str[:-16]
             save_path = saver.save(sess, save_dir + "/model.ckpt")
             os.rename(txt_logfile, os.path.join(save_dir, "cust_log.txt"))
         else:
@@ -205,9 +206,9 @@ def main():
     # AdamOptimizer default initial lr = 0.001 = 1e-3
     # lr = 4E-3
     lr = 1E-3
-    # epochs = 100
+    epochs = 100
     # epochs = 20
-    epochs = 20
+    # epochs = 800
     batch_size = 512
     # batch_size = 32
     # hidden_layers = [16, 32]
@@ -222,8 +223,8 @@ def main():
 
     if not os.path.isdir(SAVE_POINTS_DIR):
         os.makedirs(SAVE_POINTS_DIR)
-    if not os.path.isdir(RESTORE_RUN_SAVE_EDIR):
-        os.makedirs(RESTORE_RUN_SAVE_EDIR)
+    if not os.path.isdir(RESTORE_RUN_SAVE_DIR):
+        os.makedirs(RESTORE_RUN_SAVE_DIR)
 
     all_2_func_str = ["iden_iden", "sin_cos", "sin_iden", "sin_tanh", "sin_relu", "relu_relu",
                     "sin_tan", "sintan_sintan", "sintan_tansin", "sin_sin", "sinsin_sinsin"]
@@ -232,8 +233,9 @@ def main():
     for act_option in [1]:
         for net_option in [1]:
             if net_option == 1:
-                for func_str in all_2_func_str + all_3_func_str:
-                # for func_str in ["sin_x_tan", "sin_cos", "identity"]:
+                # for func_str in all_2_func_str + all_3_func_str:
+                # for func_str in ["relu_relu", "sin_relu", "iden_iden"]:
+                # for func_str in ["sin_relu", "relu_relu"]:
                 # for func_str in ["sin_iden", "sin_relu", "sin_sin", "iden_iden"]:
                 # for func_str in ["iden_iden", "sin_tanh"]:
                 # for func_str in ["iden_iden", "sin_iden"]:
