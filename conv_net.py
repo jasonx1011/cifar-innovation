@@ -37,14 +37,26 @@ def cust(x_tensor, name, func_str):
     print(dim)
 
     with tf.name_scope(name):
-        weight_0 = tf.Variable(tf.truncated_normal(dim[1:], stddev=0.05))
-        weight_1 = tf.Variable(tf.truncated_normal(dim[1:], stddev=0.05))
-        weight_2 = tf.Variable(tf.truncated_normal(dim[1:], stddev=0.05))
-        weight_3 = tf.Variable(tf.truncated_normal(dim[1:], stddev=0.05))
-        weight_4 = tf.Variable(tf.truncated_normal(dim[1:], stddev=0.05))
-        weight_mult = tf.Variable(tf.truncated_normal([1], stddev=0.05))
-        bias_0 = tf.Variable(tf.zeros(dim[1:]))
-        bias_1 = tf.Variable(tf.zeros(dim[1:]))
+        flag_const_w = True
+        if flag_const_w:
+            weight_0 = tf.constant(1.0, shape=dim[1:])
+            weight_1 = tf.constant(1.0, shape=dim[1:])
+            weight_2 = tf.constant(1.0, shape=dim[1:])
+            weight_3 = tf.constant(1.0, shape=dim[1:])
+            weight_4 = tf.constant(1.0, shape=dim[1:])
+            weight_mult = tf.constant(1.0, shape=[1])
+            bias_0 = tf.constant(0.0, shape=dim[1:])
+            bias_1 = tf.constant(0.0, shape=dim[1:])
+
+        else:
+            weight_0 = tf.Variable(tf.truncated_normal(dim[1:], stddev=0.05))
+            weight_1 = tf.Variable(tf.truncated_normal(dim[1:], stddev=0.05))
+            weight_2 = tf.Variable(tf.truncated_normal(dim[1:], stddev=0.05))
+            weight_3 = tf.Variable(tf.truncated_normal(dim[1:], stddev=0.05))
+            weight_4 = tf.Variable(tf.truncated_normal(dim[1:], stddev=0.05))
+            weight_mult = tf.Variable(tf.truncated_normal([1], stddev=0.05))
+            bias_0 = tf.Variable(tf.zeros(dim[1:]))
+            bias_1 = tf.Variable(tf.zeros(dim[1:]))
 
         if func_str == "iden_iden":
             p1_output = tf.identity(tf.add(tf.multiply(weight_0, x_tensor), bias_0))
@@ -221,13 +233,14 @@ def conv_net(x, n_classes, name, option):
 def conv_cust_net(x, n_classes, name, option, func_str):
 
     with tf.name_scope(name):
-        conv_layer = conv2d(x, 128, (3, 3), (2, 2), "conv2d_layer_0", option)
-        conv_layer = maxpool(conv_layer, (3, 3), (2, 2), "maxpool_layer_0")
+        # conv_layer = conv2d(x, 128, (3, 3), (2, 2), "conv2d_layer_0", option)
+        # conv_layer = maxpool(conv_layer, (3, 3), (2, 2), "maxpool_layer_0")
 
-        conv_layer = conv2d(conv_layer, 256, (3, 3), (2, 2), "conv2d_layer_1", option)
-        conv_layer = maxpool(conv_layer, (3, 3), (2, 2), "maxpool_layer_1")
+        # conv_layer = conv2d(conv_layer, 256, (3, 3), (2, 2), "conv2d_layer_1", option)
+        # conv_layer = maxpool(conv_layer, (3, 3), (2, 2), "maxpool_layer_1")
 
-        flatten_layer = flatten(conv_layer, "flatten_layer_0")
+        # flatten_layer = flatten(conv_layer, "flatten_layer_0")
+        flatten_layer = flatten(x, "flatten_layer_0")
 
         # fully_layer = fully_connect(flatten_layer, 256, "fully_connect_layer_0")
         fully_layer = fully_connect(flatten_layer, 128, "fully_connect_layer_0")
