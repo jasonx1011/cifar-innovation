@@ -112,3 +112,6 @@ backup/
 # pre_data
 pre_data/
 
+.DS_Store
+full_run/
+cifar*
