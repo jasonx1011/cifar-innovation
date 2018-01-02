@@ -34,3 +34,8 @@ def backup_files(dir_list):
         _clean_files(directory, os.path.join("backup/", directory))
     return None
 
+
+def check_and_mkdir(dir_list):
+    for dir in dir_list:
+        if not os.path.isdir(dir):
+            os.makedirs(dir)

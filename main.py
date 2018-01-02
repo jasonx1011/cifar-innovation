@@ -68,21 +68,15 @@ def next_batch(x, y, batch_size, re_shuffle):
         idx += batch_size
 
 
-def make_hparam_string(lr, epochs, batch_size, act_option, net_option, func_str):
+def make_hparam_string(lr, epochs, batch_size, pre_net_option, pre_net_act, cust_func_str):
     log_timestr = datetime.now().strftime("%Y%m%d_%H%M%S")
-    hparam_str = "lr_{:.0E},{},{},act_op_{},net_op_{},{},{}".format(lr, epochs, batch_size,
-                                                                 act_option, net_option,
-                                                                 func_str, log_timestr)
-    # hparam_str = "lr_{:.0E},{},{},h_layers".format(lr, epochs, batch_size)
-    # idx = 0
-    # while idx < len(hidden_layers):
-    #     hparam_str = hparam_str + "_" + str(hidden_layers[idx])
-    #     idx += 1
+    hparam_str = "lr_{:.0E},{},{},pre_net__{},pre_net_act__{},cust_func__{},{}".format(
+        lr, epochs, batch_size, pre_net_option, pre_net_act, cust_func_str, log_timestr)
     return hparam_str
 
 
 def run_graph(train_set, valid_set, lr, epochs, batch_size, turn_on_tb,
-              act_option, net_option, func_str, restore_model, loaded_from_str):
+              pre_net_option, pre_net_act, cust_func_str, restore_model, loaded_from_str):
 
     start_time = timeit.default_timer()
 
@@ -95,9 +89,9 @@ def run_graph(train_set, valid_set, lr, epochs, batch_size, turn_on_tb,
     tf.reset_default_graph()
 
     # build up nets
-    x, y, logits, cost, optimizer, correct_pred, accuracy = conv_net.build(lr, act_option, net_option, func_str)
+    x, y, logits, cost, optimizer, correct_pred, accuracy = conv_net.build(lr, pre_net_option, pre_net_act, cust_func_str)
 
-    hparam_str = make_hparam_string(lr, epochs, batch_size, act_option, net_option, func_str)
+    hparam_str = make_hparam_string(lr, epochs, batch_size, pre_net_option, pre_net_act, cust_func_str)
     txt_logfile = hparam_str + ".txt"
     with open(txt_logfile, "w") as logfile:
         print("{} created".format(txt_logfile))
@@ -192,26 +186,46 @@ def main():
     valid_set = pickle.load(open(PRE_DATA_DIR + 'validation.p', mode='rb'))
     test_set = pickle.load(open(PRE_DATA_DIR + 'test.p', mode='rb'))
 
-    # for i in [train_set, valid_set, test_set]:
-    #     print("*_features, *_labels")
-    #     print(type(i[0]), type(i[1]))
-    #     print(i[0].shape, i[1])
     rand_idx = randint(0, len(train_set[0] - 1))
     plt.imshow(train_set[0][rand_idx])
     print(LABEL_NAMES)
     print(train_set[1][rand_idx])
     plt.show()
 
-    # Hyper parameters default values
+    pre_net_option_list = ["conv2d_maxpool", "flatten"]
+    base_list = ["iden", "sin", "cos", "tan", "relu"]
+
+    # exp_dense_all = ["iden_iden", "sin_sin", "cos_cos", "tan_tan", "relu_relu"]
+    exp_dense_all = []
+    two_func_str_all = []
+
+    for i in range(len(base_list)):
+        exp_dense_all.append(base_list[i] + "_" + base_list[i])
+        for j in range(i, len(base_list)):
+            two_func_str_all.append(base_list[i] + "_" + base_list[j])
+    print("exp_dense_all:")
+    print(exp_dense_all)
+    print("two_func_str_all:")
+    print(two_func_str_all)
+
+    all_2_func_str = ["iden_iden", "sin_cos", "sin_iden", "sin_tanh", "sin_relu", "relu_relu",
+                    "sin_tan", "sintan_sintan", "sintan_tansin", "sin_sin", "sinsin_sinsin"]
+
+    all_3_func_str = ["sintan_tansin_iden"]
+
+
+    # === Hyper parameters default values =============
     # AdamOptimizer default initial lr = 0.001 = 1e-3
+    # =================================================
+
     # lr = 4E-3
     lr = 1E-3
-    epochs = 100
+    # epochs = 100
     # epochs = 20
-    # epochs = 800
+    # epochs = 50
+    epochs = 5
     batch_size = 512
     # batch_size = 32
-    # hidden_layers = [16, 32]
 
     restore_model = False
     # restore_model = True
@@ -219,31 +233,34 @@ def main():
     if restore_model is True:
         loaded_from_str = "lr_1E-03,10,512,act_op_1,net_op_1,sin_sin"
     else:
-        loaded_from_str = "No loaded from previous model!"
+        loaded_from_str = "Run from scratch. No previous model loaded!"
 
-    if not os.path.isdir(SAVE_POINTS_DIR):
-        os.makedirs(SAVE_POINTS_DIR)
-    if not os.path.isdir(RESTORE_RUN_SAVE_DIR):
-        os.makedirs(RESTORE_RUN_SAVE_DIR)
+    file_manager.check_and_mkdir([SAVE_POINTS_DIR, RESTORE_RUN_SAVE_DIR])
+    # =================================================
 
-    all_2_func_str = ["iden_iden", "sin_cos", "sin_iden", "sin_tanh", "sin_relu", "relu_relu",
-                    "sin_tan", "sintan_sintan", "sintan_tansin", "sin_sin", "sinsin_sinsin"]
-    all_3_func_str = ["sintan_tansin_iden"]
-    # for act_option in [1, 2, 3, 4]:
-    for act_option in [1]:
-        for net_option in [1]:
-            if net_option == 1:
-                # for func_str in all_2_func_str + all_3_func_str:
-                # for func_str in ["relu_relu", "sin_relu", "iden_iden"]:
-                # for func_str in ["sin_relu", "relu_relu"]:
-                # for func_str in ["sin_iden", "sin_relu", "sin_sin", "iden_iden"]:
-                # for func_str in ["iden_iden", "sin_tanh"]:
-                # for func_str in ["iden_iden", "sin_iden"]:
-                # for func_str in ["sintan_tansin"]:
-                # for func_str in ["sin_tanh"]:
-                # for func_str in ["sintan_tansin", "iden_iden", "sin_sin"]:
-                    run_graph(train_set, valid_set, lr, epochs, batch_size,
-                              turn_on_tb, act_option, net_option, func_str, restore_model, loaded_from_str)
+    # for pre_net_option in ["conv2d_maxpool", "flatten"]:
+    # for pre_net_option in ["flatten"]:
+    for pre_net_option in ["conv2d_maxpool"]:
+        if pre_net_option == "conv2d_maxpool":
+            # pre_net_act_list = ["iden", "sin"]
+            pre_net_act_list = base_list
+        else:
+            pre_net_act_list = ["NA"]
+        for pre_net_act in pre_net_act_list:
+            # for cust_func_str in all_2_func_str + all_3_func_str:
+            # for cust_func_str in ["relu_relu", "sin_relu", "iden_iden"]:
+            # for cust_func_str in ["sin_relu", "relu_relu"]:
+            # for cust_func_str in ["sin_iden", "sin_relu", "sin_sin", "iden_iden"]:
+            # for cust_func_str in ["iden_iden", "sin_tanh"]:
+            # for cust_func_str in ["iden_iden", "sin_iden"]:
+            # for cust_func_str in ["sintan_tansin"]:
+            # for cust_func_str in ["sin_tanh"]:
+            # for cust_func_str in ["sintan_tansin", "iden_iden", "sin_sin"]:
+            # for cust_func_str in ["iden_iden", "sin_iden"]:
+            # for cust_func_str in ["iden_iden"]:
+            for cust_func_str in exp_dense_all:
+                run_graph(train_set, valid_set, lr, epochs, batch_size, turn_on_tb,
+                          pre_net_option, pre_net_act, cust_func_str, restore_model, loaded_from_str)
 
 
 if __name__ == "__main__":
