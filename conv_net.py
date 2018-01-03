@@ -31,129 +31,110 @@ def input_label(n_classes, name):
     return result
 
 
-def cust(x_tensor, name, func_str):
+def func(weight, x_tensor, bias, func_str):
+    f_in = tf.add(tf.multiply(weight, x_tensor), bias)
+    if func_str == "iden":
+        res = tf.identity(f_in)
+    elif func_str == "sin":
+        res = tf.sin(f_in)
+    elif func_str == "cos":
+        res = tf.cos(f_in)
+    elif func_str == "tan":
+        res = tf.tan(f_in)
+    elif func_str == "relu":
+        res = tf.nn.relu(f_in)
+    else:
+        raise SystemExit("invalid func_str in def func!")
+    return res
+
+
+def cust(x_tensor, name, func_str, exp_opt):
     # implement w2*sin(w0*x + b0) + w3*cos(w1*x + b1)
     dim = x_tensor.get_shape().as_list()
     flatten_dim = 1
     for i in dim[1:]:
         flatten_dim = flatten_dim * i
-    flatten_dim_mult_2 = flatten_dim * 2
-    print("flatten_dim = {}".format(flatten_dim))
-    print("flatten_dim_mult_2 = {}".format(flatten_dim_mult_2))
+    # flatten_dim_mult_2 = flatten_dim * 2
+    # print("flatten_dim = {}".format(flatten_dim))
+    # print("flatten_dim_mult_2 = {}".format(flatten_dim_mult_2))
 
-    print("cust_layer input dim = {}".format(dim))
+    # print("cust_layer input dim = {}".format(dim))
 
-    exp_opt = "dense"
+    exp_opt = "constant"
+    # exp_opt = "two_weights"
+    # exp_opt = "dense"
 
     with tf.name_scope(name):
-        if exp_opt == "dense":
-            if func_str == "iden_iden":
-                act_opt = None
-            elif func_str == "sin_sin":
-                act_opt = tf.sin
-            elif func_str == "cos_cos":
-                act_opt = tf.cos
-            elif func_str == "tan_tan":
-                act_opt = tf.tan
-            elif func_str == "relu_relu":
-                act_opt = tf.nn.relu
-            else:
-                raise SystemExit("invalid func_str for exp_opt == 'dense'!")
-
-            with tf.name_scope(name):
-                first_layer = tf.layers.dense(inputs=x_tensor,
-                                              units=flatten_dim_mult_2,
-                                              activation=act_opt,
-                                              kernel_initializer=tf.truncated_normal_initializer(stddev=0.05),
-                                              name=name + "first_layer")
-
-                result = tf.layers.dense(inputs=first_layer,
-                                         units=flatten_dim,
-                                         activation=None,
-                                         kernel_initializer=tf.truncated_normal_initializer(stddev=0.05),
-                                         name=name + "second_layer")
-
-                tf.summary.histogram(name, result)
+        if exp_opt == "constant":
+            flag_const_w = True
+        elif exp_opt == "two_weights" or exp_opt == "dense":
+            flag_const_w = False
         else:
-            if exp_opt == "constant":
-                flag_const_w = True
-            elif exp_opt == "two_weights":
-                flag_const_w = False
-            else:
-                raise SystemExit("invalid exp_opt!")
+            raise SystemExit("invalid exp_opt!")
 
-            if flag_const_w:
-                weight_0 = tf.constant(1.0, shape=dim[1:])
-                weight_1 = tf.constant(1.0, shape=dim[1:])
-                weight_2 = tf.constant(1.0, shape=dim[1:])
-                weight_3 = tf.constant(1.0, shape=dim[1:])
-                weight_4 = tf.constant(1.0, shape=dim[1:])
-                weight_mult = tf.constant(1.0, shape=[1])
-                bias_0 = tf.constant(0.0, shape=dim[1:])
-                bias_1 = tf.constant(0.0, shape=dim[1:])
-                bias_2 = tf.constant(0.0, shape=dim[1:])
-            else:
-                weight_0 = tf.Variable(tf.truncated_normal(dim[1:], stddev=0.05))
-                weight_1 = tf.Variable(tf.truncated_normal(dim[1:], stddev=0.05))
-                weight_2 = tf.Variable(tf.truncated_normal(dim[1:], stddev=0.05))
-                weight_3 = tf.Variable(tf.truncated_normal(dim[1:], stddev=0.05))
-                weight_4 = tf.Variable(tf.truncated_normal(dim[1:], stddev=0.05))
-                weight_mult = tf.Variable(tf.truncated_normal([1], stddev=0.05))
-                bias_0 = tf.Variable(tf.zeros(dim[1:]))
-                bias_1 = tf.Variable(tf.zeros(dim[1:]))
-                bias_2 = tf.Variable(tf.zeros(dim[1:]))
+        if flag_const_w:
+            weight_0 = tf.constant(1.0, shape=dim[1:])
+            weight_1 = tf.constant(1.0, shape=dim[1:])
+            bias_0 = tf.constant(0.0, shape=dim[1:])
+            bias_1 = tf.constant(0.0, shape=dim[1:])
+        else:
+            weight_0 = tf.Variable(tf.truncated_normal(dim[1:], stddev=0.05))
+            weight_1 = tf.Variable(tf.truncated_normal(dim[1:], stddev=0.05))
+            bias_0 = tf.Variable(tf.zeros(dim[1:]))
+            bias_1 = tf.Variable(tf.zeros(dim[1:]))
 
-            if func_str == "iden_iden":
-                p1_output = tf.identity(tf.add(tf.multiply(weight_0, x_tensor), bias_0))
-                p2_output = tf.identity(tf.add(tf.multiply(weight_1, x_tensor), bias_1))
-            elif func_str == "sin_cos":
-                p1_output = tf.sin(tf.add(tf.multiply(weight_0, x_tensor), bias_0))
-                p2_output = tf.cos(tf.add(tf.multiply(weight_1, x_tensor), bias_1))
-            elif func_str == "sin_iden":
-                p1_output = tf.sin(tf.add(tf.multiply(weight_0, x_tensor), bias_0))
-                p2_output = tf.identity(tf.add(tf.multiply(weight_1, x_tensor), bias_1))
-            elif func_str == "sin_tanh":
-                p1_output = tf.sin(tf.add(tf.multiply(weight_0, x_tensor), bias_0))
-                p2_output = tf.tanh(tf.add(tf.multiply(weight_1, x_tensor), bias_1))
-            elif func_str == "sin_relu":
-                p1_output = tf.sin(tf.add(tf.multiply(weight_0, x_tensor), bias_0))
-                p2_output = tf.nn.relu(tf.add(tf.multiply(weight_1, x_tensor), bias_1))
-            elif func_str == "relu_relu":
-                p1_output = tf.nn.relu(tf.add(tf.multiply(weight_0, x_tensor), bias_0))
-                p2_output = tf.nn.relu(tf.add(tf.multiply(weight_1, x_tensor), bias_1))
-            elif func_str == "sin_tan":
-                p1_output = tf.sin(tf.add(tf.multiply(weight_0, x_tensor), bias_0))
-                p2_output = tf.tan(tf.add(tf.multiply(weight_1, x_tensor), bias_1))
-            elif func_str == "sintan_sintan":
-                p1_output = tf.sin(tf.tan(tf.add(tf.multiply(weight_0, x_tensor), bias_0)))
-                p2_output = tf.sin(tf.tan(tf.add(tf.multiply(weight_1, x_tensor), bias_1)))
-            elif func_str == "sintan_tansin":
-                p1_output = tf.sin(tf.tan(tf.add(tf.multiply(weight_0, x_tensor), bias_0)))
-                p2_output = tf.tan(tf.sin(tf.add(tf.multiply(weight_1, x_tensor), bias_1)))
-            elif func_str == "sin_sin":
-                p1_output = tf.sin(tf.add(tf.multiply(weight_0, x_tensor), bias_0))
-                p2_output = tf.sin(tf.add(tf.multiply(weight_1, x_tensor), bias_1))
-            elif func_str == "sinsin_sinsin":
-                p1_output = tf.sin(tf.sin(tf.add(tf.multiply(weight_0, x_tensor), bias_0)))
-                p2_output = tf.sin(tf.sin(tf.add(tf.multiply(weight_1, x_tensor), bias_1)))
-            elif func_str == "sintan_tansin_iden":
-                p1_output = tf.sin(tf.tan(tf.add(tf.multiply(weight_0, x_tensor), bias_0)))
-                p2_output = tf.tan(tf.sin(tf.add(tf.multiply(weight_1, x_tensor), bias_1)))
-                p3_output = tf.identity(x_tensor)
-            else:
-                raise SystemExit("func parameter in cust layer is invalid!")
+        weight_2 = tf.Variable(tf.truncated_normal(dim[1:], stddev=0.05))
+        weight_3 = tf.Variable(tf.truncated_normal(dim[1:], stddev=0.05))
+        bias_2 = tf.Variable(tf.zeros(dim[1:]))
 
-            if func_str == "sintan_tansin_iden":
-                w_p1 = tf.multiply(weight_2, p1_output)
-                w_p2 = tf.multiply(weight_3, p2_output)
-                w_p3 = tf.multiply(weight_4, p3_output)
-                result = tf.add(tf.add(tf.add(w_p1, w_p2), w_p3), bias_2)
+        if exp_opt == "dense":
+            str_list = func_str.split('_')
+            if len(str_list) != 2:
+                raise SystemExit("func_str does not contain exact two parameters!")
             else:
-                w_p1 = tf.multiply(weight_2, p1_output)
-                w_p2 = tf.multiply(weight_3, p2_output)
-                result = tf.add(tf.add(w_p1, w_p2), bias_2)
+                print("str_list: {}".format(str_list))
 
-            tf.summary.histogram(name, result)
+                act_opt = []
+                for item in str_list:
+                    if item == "iden":
+                        act_opt.append(None)
+                    elif item == "sin":
+                        act_opt.append(tf.sin)
+                    elif item == "cos":
+                        act_opt.append(tf.cos)
+                    elif item == "tan":
+                        act_opt.append(tf.tan)
+                    elif item == "relu":
+                        act_opt.append(tf.nn.relu)
+                    else:
+                        raise SystemExit("invalid func_str for exp_opt == 'dense'!")
+
+                with tf.name_scope(name):
+                    p1_output = tf.layers.dense(inputs=x_tensor,
+                                                units=flatten_dim,
+                                                activation=act_opt[0],
+                                                kernel_initializer=tf.truncated_normal_initializer(stddev=0.05),
+                                                name=name + "p1")
+
+                    p2_output = tf.layers.dense(inputs=x_tensor,
+                                                units=flatten_dim,
+                                                activation=act_opt[1],
+                                                kernel_initializer=tf.truncated_normal_initializer(stddev=0.05),
+                                                name=name + "p2")
+        else: # exp_opt == "constant" or "two_weights"
+            str_list = func_str.split('_')
+            if len(str_list) == 2:
+                print("str_list: {}".format(str_list))
+                p1_output = func(weight_0, x_tensor, bias_0, str_list[0])
+                p2_output = func(weight_1, x_tensor, bias_1, str_list[1])
+            else:
+                raise SystemExit("func_str does not contain exact two parameters!")
+
+        w_p1 = tf.multiply(weight_2, p1_output)
+        w_p2 = tf.multiply(weight_3, p2_output)
+        result = tf.add(tf.add(w_p1, w_p2), bias_2)
+
+        tf.summary.histogram(name, result)
 
     print_info(x_tensor, result, name)
     return result
@@ -277,7 +258,7 @@ def output(x_tensor, num_outputs, name):
 #     return output_layer
 
 
-def conv_cust_net(x, n_classes, name, pre_net_option, pre_net_act, cust_func_str):
+def conv_cust_net(x, n_classes, name, pre_net_option, pre_net_act, cust_func_str, exp_opt):
 
     with tf.name_scope(name):
         if pre_net_option == "conv2d_maxpool":
@@ -296,7 +277,7 @@ def conv_cust_net(x, n_classes, name, pre_net_option, pre_net_act, cust_func_str
 
         # fully_layer = fully_connect(flatten_layer, 256, "fully_connect_layer_0")
         fully_layer = fully_connect(flatten_layer, 128, "fully_connect_layer_0")
-        fully_layer = cust(fully_layer, "cust_fully_layer_0", func_str=cust_func_str)
+        fully_layer = cust(fully_layer, "cust_fully_layer_0", func_str=cust_func_str, exp_opt=exp_opt)
         # fully_layer = fully_connect(fully_layer, 128, "fully_connect_layer_1")
 
         output_layer = output(fully_layer, n_classes, "output_layer")
@@ -304,7 +285,7 @@ def conv_cust_net(x, n_classes, name, pre_net_option, pre_net_act, cust_func_str
     return output_layer
 
 
-def build(lr, pre_net_option, pre_net_act, cust_func_str):
+def build(lr, pre_net_option, pre_net_act, cust_func_str, exp_opt):
 
     image_shape = (32, 32, 3)
     n_classes = 10
@@ -315,7 +296,7 @@ def build(lr, pre_net_option, pre_net_act, cust_func_str):
         y = input_label(n_classes, "input_label")
 
     # Model
-    logits = conv_cust_net(x, n_classes, "conv_cust_net", pre_net_option, pre_net_act, cust_func_str)
+    logits = conv_cust_net(x, n_classes, "conv_cust_net", pre_net_option, pre_net_act, cust_func_str, exp_opt)
 
     with tf.name_scope("logits"):
         # Name logits Tensor, so that is can be loaded from disk after training

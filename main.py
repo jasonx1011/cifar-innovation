@@ -68,15 +68,15 @@ def next_batch(x, y, batch_size, re_shuffle):
         idx += batch_size
 
 
-def make_hparam_string(lr, epochs, batch_size, pre_net_option, pre_net_act, cust_func_str):
+def make_hparam_string(lr, epochs, batch_size, pre_net_option, pre_net_act, cust_func_str, exp_opt):
     log_timestr = datetime.now().strftime("%Y%m%d_%H%M%S")
-    hparam_str = "lr_{:.0E},{},{},pre_net__{},pre_net_act__{},cust_func__{},{}".format(
-        lr, epochs, batch_size, pre_net_option, pre_net_act, cust_func_str, log_timestr)
+    hparam_str = "exp_{},lr_{:.0E},{},{},{},a_{},f_{},{}".format(
+        exp_opt, lr, epochs, batch_size, pre_net_option, pre_net_act, cust_func_str, log_timestr)
     return hparam_str
 
 
 def run_graph(train_set, valid_set, lr, epochs, batch_size, turn_on_tb,
-              pre_net_option, pre_net_act, cust_func_str, restore_model, loaded_from_str):
+              pre_net_option, pre_net_act, cust_func_str, exp_opt, restore_model, loaded_from_str):
 
     start_time = timeit.default_timer()
 
@@ -89,9 +89,10 @@ def run_graph(train_set, valid_set, lr, epochs, batch_size, turn_on_tb,
     tf.reset_default_graph()
 
     # build up nets
-    x, y, logits, cost, optimizer, correct_pred, accuracy = conv_net.build(lr, pre_net_option, pre_net_act, cust_func_str)
+    x, y, logits, cost, optimizer, correct_pred, accuracy = conv_net.build(lr, pre_net_option, pre_net_act,
+                                                                           cust_func_str, exp_opt)
 
-    hparam_str = make_hparam_string(lr, epochs, batch_size, pre_net_option, pre_net_act, cust_func_str)
+    hparam_str = make_hparam_string(lr, epochs, batch_size, pre_net_option, pre_net_act, cust_func_str, exp_opt)
     txt_logfile = hparam_str + ".txt"
     with open(txt_logfile, "w") as logfile:
         print("{} created".format(txt_logfile))
@@ -194,6 +195,7 @@ def main():
 
     pre_net_option_list = ["conv2d_maxpool", "flatten"]
     base_list = ["iden", "sin", "cos", "tan", "relu"]
+    exp_opt_list = ["constant", "two_weights", "dense"]
 
     # exp_dense_all = ["iden_iden", "sin_sin", "cos_cos", "tan_tan", "relu_relu"]
     exp_dense_all = []
@@ -203,10 +205,9 @@ def main():
         exp_dense_all.append(base_list[i] + "_" + base_list[i])
         for j in range(i, len(base_list)):
             two_func_str_all.append(base_list[i] + "_" + base_list[j])
-    print("exp_dense_all:")
-    print(exp_dense_all)
-    print("two_func_str_all:")
-    print(two_func_str_all)
+    print("base_list: {}".format(base_list))
+    print("exp_dense_all: {}".format(exp_dense_all))
+    print("two_func_str_all: {}".format(two_func_str_all))
 
     all_2_func_str = ["iden_iden", "sin_cos", "sin_iden", "sin_tanh", "sin_relu", "relu_relu",
                     "sin_tan", "sintan_sintan", "sintan_tansin", "sin_sin", "sinsin_sinsin"]
@@ -220,10 +221,10 @@ def main():
 
     # lr = 4E-3
     lr = 1E-3
+    # epochs = 2
     # epochs = 100
     # epochs = 20
-    # epochs = 50
-    epochs = 5
+    epochs = 25
     batch_size = 512
     # batch_size = 32
 
@@ -238,29 +239,34 @@ def main():
     file_manager.check_and_mkdir([SAVE_POINTS_DIR, RESTORE_RUN_SAVE_DIR])
     # =================================================
 
-    # for pre_net_option in ["conv2d_maxpool", "flatten"]:
-    # for pre_net_option in ["flatten"]:
-    for pre_net_option in ["conv2d_maxpool"]:
-        if pre_net_option == "conv2d_maxpool":
-            # pre_net_act_list = ["iden", "sin"]
-            pre_net_act_list = base_list
-        else:
-            pre_net_act_list = ["NA"]
-        for pre_net_act in pre_net_act_list:
-            # for cust_func_str in all_2_func_str + all_3_func_str:
-            # for cust_func_str in ["relu_relu", "sin_relu", "iden_iden"]:
-            # for cust_func_str in ["sin_relu", "relu_relu"]:
-            # for cust_func_str in ["sin_iden", "sin_relu", "sin_sin", "iden_iden"]:
-            # for cust_func_str in ["iden_iden", "sin_tanh"]:
-            # for cust_func_str in ["iden_iden", "sin_iden"]:
-            # for cust_func_str in ["sintan_tansin"]:
-            # for cust_func_str in ["sin_tanh"]:
-            # for cust_func_str in ["sintan_tansin", "iden_iden", "sin_sin"]:
-            # for cust_func_str in ["iden_iden", "sin_iden"]:
-            # for cust_func_str in ["iden_iden"]:
-            for cust_func_str in exp_dense_all:
-                run_graph(train_set, valid_set, lr, epochs, batch_size, turn_on_tb,
-                          pre_net_option, pre_net_act, cust_func_str, restore_model, loaded_from_str)
+    for exp_opt in exp_opt_list:
+        # for pre_net_option in ["conv2d_maxpool", "flatten"]:
+        for pre_net_option in ["flatten"]:
+        # for pre_net_option in ["conv2d_maxpool"]:
+            if pre_net_option == "conv2d_maxpool":
+                # pre_net_act_list = ["iden", "sin"]
+                # pre_net_act_list = base_list
+                pre_net_act_list = ["iden", "sin", "relu"]
+                # pre_net_act_list = ["cos", "tan"]
+            else:
+                pre_net_act_list = ["NA"]
+            for pre_net_act in pre_net_act_list:
+                # for cust_func_str in all_2_func_str + all_3_func_str:
+                # for cust_func_str in ["relu_relu", "sin_relu", "iden_iden"]:
+                # for cust_func_str in ["sin_relu", "relu_relu"]:
+                # for cust_func_str in ["sin_iden", "sin_relu", "sin_sin", "iden_iden"]:
+                # for cust_func_str in ["iden_iden", "sin_tanh"]:
+                # for cust_func_str in ["iden_iden", "sin_iden"]:
+                # for cust_func_str in ["sintan_tansin"]:
+                # for cust_func_str in ["sin_tanh"]:
+                # for cust_func_str in ["sintan_tansin", "iden_iden", "sin_sin"]:
+                # for cust_func_str in ["iden_iden", "sin_iden"]:
+                # for cust_func_str in ["iden_iden"]:
+                # for cust_func_str in exp_dense_all:
+                for cust_func_str in two_func_str_all:
+                    run_graph(train_set, valid_set, lr, epochs, batch_size, turn_on_tb,
+                              pre_net_option, pre_net_act, cust_func_str, exp_opt,
+                              restore_model, loaded_from_str)
 
 
 if __name__ == "__main__":
