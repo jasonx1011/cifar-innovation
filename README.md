@@ -2,10 +2,10 @@
 
 [`TensorFlow` and `TensorBoard`] 
 
-**ML Algorithms (implemented by TensorFlow):**  
+**ML Algorithms**  
 Feedforward Neural Network and Convolutional Neural Networks  
 
-**Envs:**  
+**Envs**  
 Anaconda and Python 3.5
 
 **Motivation**  
@@ -45,27 +45,29 @@ CIFAR10 image data set batch 1 (10,000 images)
 ![exp_results_2](./assets/exp_results_2.png)  
 
 **Summary**  
-In this experiment:
-   * CNNs + FNNs perform better than purely FNNs as expected 
-   * activation function usage performance: relu > linear > sin > cos >> tan  
+Briefly conclusion of this experiment:
+   * CNNs perform better than purely FNNs in image classification task as expected 
+   * activation function usage performance: linear/relu > sin > cos >> tan  
 
-Here are some lessons I learned/confirmed from this experiment:
-   * convolutional network boosts the accuracy and makes network more robust, but the run time increase dramatically as expected.
-      * In this experiment, validation accuracy increase from 38% to 56%, but run time is about 13x
+Here are some lessons I learned or confirmed:
+   * CNNs boosts the accuracy and makes network more robust, but the run time increase dramatically as expected.
+      * CNNs v.s. FNNs: validation accuracy increase from 38% to 56%, but run time is about 13x
       * runtime: 1.55 mins/100 epochs without conv net, 5.18 mins/25 epochs with conv net
-   * relu function generally makes the overall network performance better and more robust to the periodic activation inside the network
-   * tan activation funcation will make the cost curve unstable and it will also make poorly performance 
+   * Impact of activation functions:
+      * relu function generally makes the overall network performance better and more robust to the periodic activation inside the network
+      * sin/cos activation function perform mixed in different setting, but generally sin function perform better than cos function 
+      * tan activation funcation will make the cost curve unstable and it will also make poorly performance 
    
-   * connection configuration (constant weights/sparse weights/dense weights):
+   * Architecture configuration (constant weights/sparse weights/dense weights):
       * periodic activation functions are easily overfitting with dense connection in purely FNNs
 
-   * using multiple periodic activation function within the same layer:
-      * the result did not perform better than using purely relu/linear function. (i.e. sin + cos v.s. relu + relu or iden + iden)
+   * Custom design layer - multiple periodic activation function within the same layer:
+      * the result did not perform better than using purely relu/linear function. 
+      * validation accuracy: (iden + iden) ~= 0.57, (sin + cos) ~= 0.53, (relu + relu) ~= 0.56
       * if we use both periodic activation function for custom layer, it will be sensitive to the previous network activation function or connection configuration. (vulnerable in dense configuration which is not preferable) 
+
    
-   * performance-wise not getting better at least in this experiment
-  
-**Potential Future Works**  
+**Future Works**  
 Although the periodic activation function is difficult to train and sensitive to the network architecture, we could see the initial training curve are faster than linear activation function in some cases. This encourages future work to investigate the use of periodic functions combining with other monotonic activation function.
 
 **Tensorboard Samples**  
