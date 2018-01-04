@@ -222,9 +222,9 @@ def main():
     # lr = 4E-3
     lr = 1E-3
     # epochs = 2
-    # epochs = 100
+    epochs = 100
     # epochs = 20
-    epochs = 25
+    # epochs = 25
     batch_size = 512
     # batch_size = 32
 
