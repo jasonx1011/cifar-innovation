@@ -65,6 +65,8 @@ Here are some lessons I learned/confirmed from this experiment:
    
    * performance-wise not getting better at least in this experiment
   
+**Potential Future Works**  
+Although the periodic activation function is difficult to train and sensitive to the network architecture, we could see the initial training curve are faster than linear activation function in some cases. This encourages future work to investigate the use of periodic functions combining with other monotonic activation function.
 
 **Tensorboard Samples**  
    * Conv net graph: 
