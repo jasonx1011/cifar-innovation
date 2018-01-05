@@ -4,6 +4,7 @@ import os
 import pickle
 from random import randint
 from sklearn.utils import shuffle
+import sys
 import tensorflow as tf
 import timeit
 
@@ -163,6 +164,7 @@ def run_graph(train_set, valid_set, lr, epochs, batch_size, turn_on_tb,
             os.rename(txt_logfile, os.path.join(save_dir, "cust_log.txt"))
         else:
             save_dir = SAVE_POINTS_DIR + hparam_str[:-16]
+            print(hparam_str[:-16]) 
             save_path = saver.save(sess, save_dir + "/model.ckpt")
             os.rename(txt_logfile, os.path.join(save_dir, "cust_log.txt"))
         print("Model & txt logfile saved in file: {}".format(save_path))
@@ -170,12 +172,16 @@ def run_graph(train_set, valid_set, lr, epochs, batch_size, turn_on_tb,
     return
 
 
-def main():
-    # preprocess_raw_data = True
-    preprocess_raw_data = False
+def main(argv):
+    if sys.argv[1] == 'raw':
+        preprocess_raw_data = True
+    else:
+        preprocess_raw_data = False
+
     turn_on_tb = True
 
     if preprocess_raw_data:
+        print("preprocessing 5 batches...")
         file_manager.backup_files([PRE_DATA_DIR])
         preprocess_all(CIFAR10_DIR, PRE_DATA_DIR)
 
@@ -187,11 +193,12 @@ def main():
     valid_set = pickle.load(open(PRE_DATA_DIR + 'validation.p', mode='rb'))
     test_set = pickle.load(open(PRE_DATA_DIR + 'test.p', mode='rb'))
 
-    rand_idx = randint(0, len(train_set[0] - 1))
-    plt.imshow(train_set[0][rand_idx])
-    print(LABEL_NAMES)
-    print(train_set[1][rand_idx])
-    plt.show()
+    # rand_idx = randint(0, len(train_set[0] - 1))
+    # plt.imshow(train_set[0][rand_idx])
+    # print(LABEL_NAMES)
+    # print(train_set[1][rand_idx])
+    # print("PAUSE: showing random picture, please close the image window for continuing....")
+    # plt.show()
 
     pre_net_option_list = ["conv2d_maxpool", "flatten"]
     base_list = ["iden", "sin", "cos", "tan", "relu"]
@@ -222,7 +229,7 @@ def main():
     # lr = 4E-3
     lr = 1E-3
     # epochs = 2
-    epochs = 100
+    epochs = 1
     # epochs = 20
     # epochs = 25
     batch_size = 512
@@ -270,4 +277,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])
