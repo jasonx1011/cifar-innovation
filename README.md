@@ -2,33 +2,40 @@
 
 [`TensorFlow` and `TensorBoard`] 
 
-**ML Algorithms**  
+## ML Algorithms
 Feedforward Neural Network and Convolutional Neural Networks  
 
+## Run Steps
 **Envs**  
-Anaconda and Python 3.6
+Anaconda and Python 3.6  
 
+**Clone project**
+```
+git clone https://github.com/jasonx1011/cifar-innovation.git   
+```
 **Envs and Packages**  
-conda create -n cifar python=3
-conda install numpy matplotlib scikit-learn tensorflow
+```
+conda create -n cifar python=3.6
+conda install numpy matplotlib scikit-learn tensorflow  
+```
+**Run** 
+```
+python main.py  
+```
 
-**Run Steps**  
-% git clone https://github.com/jasonx1011/cifar-innovation.git 
-% python main.py  
-
-**Motivation**  
+## Motivation
 Theoretically, based on [Fourier Transform](https://en.wikipedia.org/wiki/Fourier_transform), we could represent any waveform by an infinite sum of periodic sines waves and cosine waves.  
 
 Nowadays, most neural networks use non-periodic and monotonic activation functions, i.e. relu function, across the whole architecture, but I would like to do some experiments to see if the periodic activation functions could potential help the performance or not.
 
-**Innovation**  
+## Innovation  
 Usually, people use the same monotonic activation function within the same layer.
 However, based on the inspiration from Fourier Transform, I created a custom layer, which composed by two same/different kind of periodic/non-periodic activation functions units within the same layer. I put this custom layer in the middle of the FNNs network for classification task and compare it with the baseline result (baseline: all linear activation in the network).  
 
-**Raw Data:**   
+## Raw Data   
 CIFAR10 image data set batch 1 (10,000 images)
 
-**Experiment Configurations**  
+## Experiment Configurations 
    * Flowchart: 
 ![exp_flowchart](./assets/exp_flowchart.png)  
 
@@ -47,12 +54,12 @@ CIFAR10 image data set batch 1 (10,000 images)
 [custom layer activation configurations]: 
    * 15 total combinations [linear, sin, cos, tan, relu] x [linear, sin, cos, tan, relu]
 
-**Experiment Results**  
+## Experiment Results  
    * Validation Accuracy in different experiment configurations: 
 ![exp_results_1](./assets/exp_results_1.png)  
 ![exp_results_2](./assets/exp_results_2.png)  
 
-**Summary**  
+## Summary  
 Briefly conclusion of this experiment:
    * CNNs perform better than purely FNNs in image classification task as expected 
    * activation function usage performance: linear/relu > sin > cos >> tan  
@@ -75,10 +82,10 @@ Here are some lessons I learned or confirmed:
       * if we use both periodic activation function for custom layer, it will be sensitive to the previous network activation function or connection configuration. (vulnerable in dense configuration which is not preferable) 
 
    
-**Future Works**  
+## Future Works  
 Although the periodic activation function is difficult to train and sensitive to the network architecture, we could see the initial training curve are faster than linear activation function in some cases. This encourages future work to investigate the use of periodic functions combining with other monotonic activation function.
 
-**Tensorboard Samples**  
+## Tensorboard Samples  
    * Conv net graph: 
 ![conv_net_graph](./assets/conv_net_graph.png)  
    * Cust layer graph: 
