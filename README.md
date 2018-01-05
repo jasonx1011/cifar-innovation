@@ -6,7 +6,15 @@
 Feedforward Neural Network and Convolutional Neural Networks  
 
 **Envs**  
-Anaconda and Python 3.5
+Anaconda and Python 3.6
+
+**Envs and Packages**  
+conda create -n cifar python=3
+conda install numpy matplotlib scikit-learn tensorflow
+
+**Run Steps**  
+% git clone https://github.com/jasonx1011/cifar-innovation.git 
+% python main.py  
 
 **Motivation**  
 Theoretically, based on [Fourier Transform](https://en.wikipedia.org/wiki/Fourier_transform), we could represent any waveform by an infinite sum of periodic sines waves and cosine waves.  
