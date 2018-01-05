@@ -160,11 +160,12 @@ def run_graph(train_set, valid_set, lr, epochs, batch_size, turn_on_tb,
         # Save the variables to disk.
         if restore_model:
             save_dir = RESTORE_RUN_SAVE_DIR + "LOAD_" + loaded_from_str + "_RUN_ON_" + hparam_str[:-16]
+            file_manager.check_and_mkdir([save_dir])
             save_path = saver.save(sess, save_dir + "/model.ckpt")
             os.rename(txt_logfile, os.path.join(save_dir, "cust_log.txt"))
         else:
             save_dir = SAVE_POINTS_DIR + hparam_str[:-16]
-            print(hparam_str[:-16]) 
+            file_manager.check_and_mkdir([save_dir])
             save_path = saver.save(sess, save_dir + "/model.ckpt")
             os.rename(txt_logfile, os.path.join(save_dir, "cust_log.txt"))
         print("Model & txt logfile saved in file: {}".format(save_path))
@@ -172,10 +173,12 @@ def run_graph(train_set, valid_set, lr, epochs, batch_size, turn_on_tb,
     return
 
 
-def main(argv):
-    if sys.argv[1] == 'raw':
+def main():
+    if not os.path.isdir("pre_data"):
+        print("No prepossessing dataset, re-generate from raw dataset...")
         preprocess_raw_data = True
     else:
+        print("'pre_data' directory exists, use it as input...")
         preprocess_raw_data = False
 
     turn_on_tb = True
@@ -229,7 +232,7 @@ def main(argv):
     # lr = 4E-3
     lr = 1E-3
     # epochs = 2
-    epochs = 1
+    epochs = 100
     # epochs = 20
     # epochs = 25
     batch_size = 512
@@ -277,4 +280,4 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main()
