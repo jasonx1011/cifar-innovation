@@ -109,9 +109,17 @@ migrations/
 # backup dir
 backup/
 
-# pre_data
+# preprocessing_data 5 batches, 1.4G
 pre_data/
 
 .DS_Store
+
+# original file from https://www.cs.toronto.edu/~kriz/cifar.html
+cifar-10-python.tar.gz
+
+# run results
 full_run/
-cifar*
+restore_run_save_points_*
+save_points_*
+tf_logs_*
+
