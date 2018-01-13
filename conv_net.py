@@ -52,7 +52,7 @@ def cust(x_tensor, name, func_str, exp_opt):
     # implement w2*sin(w0*x + b0) + w3*cos(w1*x + b1)
     dim = x_tensor.get_shape().as_list()
     flatten_dim = 1
-    for i in dim[1:]e
+    for i in dim[1:]:
         flatten_dim = flatten_dim * i
     # flatten_dim_mult_2 = flatten_dim * 2
     # print("flatten_dim = {}".format(flatten_dim))
