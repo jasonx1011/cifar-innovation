@@ -1,17 +1,17 @@
 from datetime import datetime
-import matplotlib.pyplot as plt
 import os
-import pickle
 from random import randint
-from sklearn.utils import shuffle
 import sys
-import tensorflow as tf
 import timeit
 
-from preprocess import preprocess_all
+import matplotlib.pyplot as plt
+import pickle
+from sklearn.utils import shuffle
+import tensorflow as tf
 
 import conv_net
 import file_manager
+from preprocess import preprocess_all
 
 # downloaded and unzipped from https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz
 CIFAR10_DIR = "./cifar-10-batches-py/"
