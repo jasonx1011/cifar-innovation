@@ -1,6 +1,5 @@
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.ops import gen_nn_ops
 
 PRINT_INFO_ON = False
 
