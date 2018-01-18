@@ -270,10 +270,10 @@ def main():
                 # for cust_func_str in ["sintan_tansin"]:
                 # for cust_func_str in ["sin_tanh"]:
                 # for cust_func_str in ["sintan_tansin", "iden_iden", "sin_sin"]:
-                # for cust_func_str in ["iden_iden", "sin_iden"]:
+                for cust_func_str in ["iden_iden", "sin_iden"]:
                 # for cust_func_str in ["iden_iden"]:
                 # for cust_func_str in exp_dense_all:
-                for cust_func_str in two_func_str_all:
+                # for cust_func_str in two_func_str_all:
                     run_graph(train_set, valid_set, lr, epochs, batch_size, turn_on_tb,
                               pre_net_option, pre_net_act, cust_func_str, exp_opt,
                               restore_model, loaded_from_str)
